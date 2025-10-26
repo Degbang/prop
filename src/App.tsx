@@ -3,10 +3,8 @@ import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-do
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import confetti from "canvas-confetti";
 import emailjs from "@emailjs/browser";
-import {
-  Heart, Sparkles, Mail, CheckCircle2, ChevronRight, HandHeart,
-  Plus, Trash2, Check
-} from "lucide-react";
+import { Heart, Sparkles, Mail, CheckCircle2, ChevronRight, HandHeart } from "lucide-react";
+import { PHOTOS, SONG } from "./lib/path";
 
 /* ------------------- CONFIG ------------------- */
 const CONFIG = {
@@ -16,11 +14,6 @@ const CONFIG = {
     bg: "from-[#fffaf6] via-[#fff4f6] to-[#f7f0ff]",
     ink: "#121826",
   },
-  PHOTOS: [
-    "/images/1.jpg","/images/2.jpg","/images/3.jpg","/images/4.jpg",
-    "/images/5.jpg","/images/6.jpg","/images/7.jpg","/images/8.jpg",
-  ],
-  AUDIO_URL: "/audio/song.mp3",
   EMAILS: ["sirimaalo@gmail.com", "domegilalfred@gmail.com"],
   EMAILJS: {
     PUBLIC_KEY: "RNZu31Q6C21MqPPKQ",
@@ -34,7 +27,7 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost";
   size?: "sm" | "md" | "lg";
 };
-function Button({ variant = "primary", size = "md", className = "", ...props }: ButtonProps) {
+function Button({ variant = "primary", size = "md", className = "", type = "button", ...props }: ButtonProps) {
   const base = "inline-flex items-center justify-center font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 rounded-full";
   const sizes = { sm: "h-8 px-3 text-sm", md: "h-10 px-4 text-sm", lg: "h-11 px-6 text-base" }[size];
   const variants = {
@@ -42,7 +35,7 @@ function Button({ variant = "primary", size = "md", className = "", ...props }: 
     secondary: "bg-slate-100 text-slate-800 hover:bg-slate-200",
     ghost: "bg-transparent hover:bg-white/50",
   }[variant];
-  return <button className={`${base} ${sizes} ${variants} ${className}`} {...props} />;
+  return <button type={type} className={`${base} ${sizes} ${variants} ${className}`} {...props} />;
 }
 function Card(props: React.HTMLAttributes<HTMLDivElement>) {
   const { className = "", ...rest } = props;
@@ -95,19 +88,19 @@ function useAudio(src: string) {
 /* ------------------- LAYOUT ------------------- */
 function GradientBG({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`min-h-svh w-full bg-gradient-to-br ${CONFIG.THEME.bg} text-slate-800`} style={{ color: CONFIG.THEME.ink }}>
+    <div className={`min-h-svh w-screen overflow-x-hidden bg-gradient-to-br ${CONFIG.THEME.bg} text-slate-800`} style={{ color: CONFIG.THEME.ink }}>
       <div className="pointer-events-none fixed inset-0 opacity-[0.08] mix-blend-multiply" style={{ backgroundImage:
         "radial-gradient(40rem_40rem_at_20%_10%,#fff_0,transparent_60%),radial-gradient(46rem_46rem_at_80%_0%,#fff_0,transparent_55%)" }} />
       <div className="pointer-events-none fixed inset-0 opacity-[0.05]" style={{ backgroundImage:
         "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"140\" height=\"140\"><filter id=\"n\"><feTurbulence type=\"fractalNoise\" baseFrequency=\"0.8\" numOctaves=\"2\" stitchTiles=\"stitch\"/></filter><rect width=\"100%\" height=\"100%\" filter=\"url(%23n)\" opacity=\"0.9\"/></svg>')" }} />
-      <div className="relative flex min-h-svh flex-col">{children}</div>
+      <main className="relative flex min-h-svh flex-col">{children}</main>
     </div>
   );
 }
-function Section({ children, id }: { children: React.ReactNode; id?: string }) {
+function Section({ children, id, center = true }: { children: React.ReactNode; id?: string; center?: boolean }) {
   return (
-    <section id={id} className="relative grow grid place-items-center py-10">
-      <div className="w-full max-w-6xl px-4 sm:px-6 lg:px-8">{children}</div>
+    <section id={id} className={`relative flex-1 py-10 min-h-[calc(100svh-56px)] ${center ? "grid place-items-center" : ""}`}>
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8">{children}</div>
     </section>
   );
 }
@@ -124,8 +117,6 @@ function TopNav() {
         <div className="flex items-center gap-5 text-sm text-slate-700/80">
           <Link to="/memories" className="hover:underline">Memories</Link>
           <Link to="/offer" className="hover:underline">Offer</Link>
-          <Link to="/feedback" className="hover:underline">Feedback</Link>
-          <Link to="/todo" className="hover:underline">To-Do</Link>
         </div>
       </div>
     </nav>
@@ -146,12 +137,7 @@ function HeroPage({ onBegin, audioCtl }: { onBegin: () => void; audioCtl: Return
             </div>
             <p className="text-sm text-slate-700/80">Welcome</p>
           </div>
-          <motion.h1
-            initial={{ opacity: 0, y: reduce ? 0 : 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="font-serif text-4xl sm:text-5xl md:text-6xl leading-tight text-slate-900 mt-6"
-          >
+          <motion.h1 initial={{ opacity: 0, y: reduce ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} className="font-serif text-4xl sm:text-5xl md:text-6xl leading-tight text-slate-900 mt-6">
             Hi {CONFIG.HER}, may I borrow a moment of your heart?
           </motion.h1>
           <p className="mt-4 text-slate-700/80 leading-relaxed max-w-prose">
@@ -169,7 +155,7 @@ function HeroPage({ onBegin, audioCtl }: { onBegin: () => void; audioCtl: Return
         <motion.div initial={{ opacity: 0, scale: reduce ? 1 : 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }}>
           <div className="relative rounded-2xl p-1 bg-white/70 shadow-xl ring-1 ring-slate-200/70 w-full max-w-md mx-auto">
             <div className="rounded-xl overflow-hidden grid grid-cols-3 grid-rows-2 gap-1">
-              {CONFIG.PHOTOS.slice(0,6).map((src, i) => (
+              {PHOTOS.slice(0,6).map((src, i) => (
                 <img key={i} src={src} alt="memory" loading="eager" decoding="async" className="aspect-[3/4] w-full object-cover" />
               ))}
             </div>
@@ -180,167 +166,26 @@ function HeroPage({ onBegin, audioCtl }: { onBegin: () => void; audioCtl: Return
   );
 }
 
-/* ---------- IndexedDB helpers for Memories ---------- */
-type DBPhoto = { id: string; label?: string; createdAt: number; blob: Blob };
-type MemoryItem = { id: string; label?: string; createdAt: number; src: string; uploaded: boolean; _revoke?: () => void };
-
-const DB_NAME = "memoriesDB";
-const DB_STORE = "photos";
-
-function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, 1);
-    req.onupgradeneeded = () => {
-      const db = req.result;
-      if (!db.objectStoreNames.contains(DB_STORE)) {
-        const store = db.createObjectStore(DB_STORE, { keyPath: "id" });
-        store.createIndex("createdAt", "createdAt");
-      }
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function dbAddPhotos(files: File[], label?: string) {
-  const db = await openDB();
-  const tx = db.transaction(DB_STORE, "readwrite");
-  const store = tx.objectStore(DB_STORE);
-  for (const f of files) {
-    const rec: DBPhoto = { id: crypto.randomUUID(), label, createdAt: Date.now(), blob: f };
-    store.put(rec);
-  }
-await new Promise<void>((resolve, reject) => {
-  tx.oncomplete = () => resolve();
-  tx.onerror = () => reject(tx.error || new Error("IDB tx error"));
-});  db.close();
-}
-async function dbGetAllPhotos(): Promise<DBPhoto[]> {
-  const db = await openDB();
-  const tx = db.transaction(DB_STORE, "readonly");
-  const store = tx.objectStore(DB_STORE);
-  const idx = store.index("createdAt");
-  const out: DBPhoto[] = [];
-  const req = idx.openCursor(null, "prev");
-  return await new Promise((resolve) => {
-    req.onsuccess = () => {
-      const cur = req.result;
-      if (cur) { out.push(cur.value as DBPhoto); cur.continue(); }
-      else { resolve(out); db.close(); }
-    };
-    req.onerror = () => { resolve([]); db.close(); };
-  });
-}
-async function dbDeletePhoto(id: string) {
-  const db = await openDB();
-  const tx = db.transaction(DB_STORE, "readwrite");
-  tx.objectStore(DB_STORE).delete(id);
-
-  await new Promise<void>((resolve, reject) => {
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error || new Error("IDB tx error"));
-  });
-  db.close();
-}
-
-/* ------------------- MEMORIES (scrapbook) ------------------- */
+/* ------------------- MEMORIES (static scrapbook) ------------------- */
 function GalleryPage() {
   const [openSrc, setOpenSrc] = useState<string | null>(null);
-  const [label, setLabel] = useState("");
-  const fileRef = useRef<HTMLInputElement | null>(null);
-  const [items, setItems] = useState<MemoryItem[]>([]);
-
-  // build list from CONFIG.PHOTOS + IndexedDB uploads
-  useEffect(() => {
-    let revoked: (() => void)[] = [];
-    (async () => {
-      const builtIn: MemoryItem[] = CONFIG.PHOTOS.map((src, i) => ({
+  const navigate = useNavigate();
+  const items = useMemo(
+    () =>
+      PHOTOS.map((src, i) => ({
         id: `builtin-${i}`,
         src,
         label: i % 3 === 0 ? "favorite" : i % 4 === 0 ? "your laugh" : undefined,
-        createdAt: i,
-        uploaded: false,
-      }));
-
-      const uploaded = await dbGetAllPhotos();
-      const mapped: MemoryItem[] = uploaded.map(p => {
-        const url = URL.createObjectURL(p.blob);
-        const revoke = () => URL.revokeObjectURL(url);
-        revoked.push(revoke);
-        return { id: p.id, src: url, label: p.label, createdAt: p.createdAt, uploaded: true, _revoke: revoke };
-      });
-
-      const all = [...mapped, ...builtIn].sort((a,b)=>b.createdAt - a.createdAt);
-      setItems(all);
-    })();
-
-    return () => { revoked.forEach(fn=>fn()); };
-  }, []);
-
-  const addPhotos = async () => {
-    const files = Array.from(fileRef.current?.files || []);
-    if (!files.length) return;
-    await dbAddPhotos(files, label.trim() || undefined);
-    // refresh view
-    setLabel("");
-    if (fileRef.current) fileRef.current.value = "";
-    // reload uploaded portion
-    const uploaded = await dbGetAllPhotos();
-    const mapped: MemoryItem[] = uploaded.map(p => {
-      const url = URL.createObjectURL(p.blob);
-      return { id: p.id, src: url, label: p.label, createdAt: p.createdAt, uploaded: true, _revoke: () => URL.revokeObjectURL(url) };
-    });
-    const builtIn = items.filter(i=>!i.uploaded);
-    const all = [...mapped, ...builtIn].sort((a,b)=>b.createdAt - a.createdAt);
-    setItems(prev => {
-      // revoke any old object URLs from previous uploaded list
-      prev.forEach(i => i.uploaded && i._revoke?.());
-      return all;
-    });
-  };
-
-  const removeItem = async (id: string) => {
-    const it = items.find(x=>x.id===id);
-    if (it?.uploaded) await dbDeletePhoto(id);
-    it?._revoke?.();
-    setItems(cur => cur.filter(x=>x.id!==id));
-  };
-
-  const navigate = useNavigate();
+      })),
+    []
+  );
 
   return (
     <Section>
       <Card>
-        <CardHeader>
-          <CardTitle className="font-serif text-2xl">Little gallery of us</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="font-serif text-2xl">Little gallery of us</CardTitle></CardHeader>
         <CardContent>
-          <p className="text-slate-700/80 mb-4">
-            Add photos (and a tiny label) to our scrapbook. Tap any photo to view it larger.
-          </p>
-
-          {/* Uploader */}
-          <div className="rounded-xl border border-slate-200 bg-white/70 p-3 mb-4 grid sm:grid-cols-[1fr_auto_auto] gap-2 items-center">
-            <input
-              type="text"
-              value={label}
-              onChange={(e)=>setLabel(e.target.value)}
-              className="h-10 rounded-md border border-slate-200 bg-white px-3"
-              placeholder="Optional label (e.g., beach day, your laugh)…"
-            />
-            <input
-              ref={fileRef}
-              type="file"
-              multiple
-              accept="image/*"
-              // @ts-ignore capture is valid HTML attribute on some browsers
-              capture="environment"
-              className="h-10"
-            />
-            <Button onClick={addPhotos}><Plus className="w-4 h-4 mr-1"/>Add</Button>
-            <div className="sm:col-span-3 text-xs text-slate-500">
-              Photos are stored locally on this device (IndexedDB). They won’t sync across devices.
-            </div>
-          </div>
+          <p className="text-slate-700/80 mb-4">A few snapshots I love. Tap any photo to view it larger.</p>
 
           {/* Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
@@ -363,15 +208,6 @@ function GalleryPage() {
                     </span>
                   )}
                 </button>
-                {it.uploaded && (
-                  <button
-                    onClick={()=>removeItem(it.id)}
-                    className="absolute top-2 right-2 z-10 rounded-full bg-white/85 p-1 text-slate-600 hover:text-rose-600 shadow"
-                    title="Remove"
-                  >
-                    <Trash2 className="w-4 h-4"/>
-                  </button>
-                )}
               </div>
             ))}
           </div>
@@ -490,21 +326,48 @@ function RingSVG({ className }: { className?: string }) {
 }
 function QuestionPage({ onYes }: { onYes: () => void }) {
   const reduce = useReducedMotion();
-  useEffect(()=>{ const id=setTimeout(()=>{ confetti({ particleCount: 50, spread: 60, origin:{y:0.6}, scalar:0.8 }); },600); return ()=>clearTimeout(id); },[]);
+  const [ummCount, setUmmCount] = useState(0);
+
+  const lines = [
+    "Haha, adorable stalling — but the only correct answer is YES 😌",
+    "We’ll be here for days if you don’t say yes 😂",
+    "Public service announcement: this button only delays happiness. Try the blue one 👉",
+    "Alright, last try… the “Umm…” button has gone on strike. YES? 😇",
+  ];
+  const msg = ummCount > 0 ? lines[Math.min(ummCount - 1, lines.length - 1)] : "";
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 }, scalar: 0.8 });
+    }, 600);
+    return () => clearTimeout(id);
+  }, []);
+
   return (
-    <Section>
+    <Section center>
       <div className="rounded-3xl p-8 bg-white/70 ring-1 ring-slate-200/70 shadow-xl text-center w-full max-w-xl mx-auto">
-        <motion.div initial={{opacity:0,y:reduce?0:8}} animate={{opacity:1,y:0}} transition={{duration:0.6}}>
+        <motion.div initial={{ opacity: 0, y: reduce ? 0 : 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <div className="mx-auto w-40 h-40 mb-4">
-            <motion.div initial={{strokeDasharray:400, strokeDashoffset:400}} animate={{strokeDashoffset:0}} transition={{duration:reduce?0:1.8, ease:"easeInOut"}}>
-              <RingSVG className="w-40 h-40"/>
+            <motion.div initial={{ strokeDasharray: 400, strokeDashoffset: 400 }} animate={{ strokeDashoffset: 0 }} transition={{ duration: reduce ? 0 : 1.8, ease: "easeInOut" }}>
+              <RingSVG className="w-40 h-40" />
             </motion.div>
           </div>
-          <h3 className="font-serif text-3xl">{CONFIG.HER}, will you be my girlfriend?</h3>
+
+          <h3 className="font-serif text-3xl">Lucynda, will you be my girlfriend?</h3>
           <p className="mt-2 text-slate-700">Pick the only correct answer below 🥰</p>
+          {msg && <p className="mt-3 text-rose-500/90 text-sm">{msg}</p>}
+
           <div className="mt-6 flex items-center justify-center gap-3">
             <Button size="lg" className="px-8" onClick={onYes}>YES</Button>
-            <Button size="lg" variant="secondary">Umm…</Button>
+            <motion.button
+              type="button"
+              onClick={() => setUmmCount(c => c + 1)}
+              className="h-11 px-6 rounded-full bg-slate-100 text-slate-800 font-medium shadow-sm hover:bg-slate-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
+              animate={ummCount > 0 ? { x: [0, -6, 6, -6, 6, 0] } : undefined}
+              transition={{ duration: 0.35 }}
+            >
+              {ummCount >= lines.length ? "…fine, YES it is 😇" : "Umm…"}
+            </motion.button>
           </div>
         </motion.div>
       </div>
@@ -574,118 +437,9 @@ function CelebrationPage() {
   );
 }
 
-/* ------------------- FEEDBACK (no notification) ------------------- */
-type FeedbackItem = { id: string; kind: "Applause"|"Appreciation"|"Complaint"; message: string; who?: string; at: number };
-function FeedbackPage() {
-  const [kind, setKind] = useState<FeedbackItem["kind"]>("Applause");
-  const [message, setMessage] = useState("");
-  const [who, setWho] = useState("");
-  const [items, setItems] = useState<FeedbackItem[]>(() => {
-    try { return JSON.parse(localStorage.getItem("proposal_feedback")||"[]"); } catch { return []; }
-  });
-
-  const submit = () => {
-    if (!message.trim()) return;
-    const item: FeedbackItem = { id: crypto.randomUUID(), kind, message: message.trim(), who: who.trim() || undefined, at: Date.now() };
-    const next = [item, ...items];
-    setItems(next);
-    localStorage.setItem("proposal_feedback", JSON.stringify(next));
-    setMessage(""); setWho("");
-  };
-
-  return (
-    <Section>
-      <div className="grid md:grid-cols-2 gap-6 w-full max-w-5xl mx-auto">
-        <Card>
-          <CardHeader><CardTitle className="font-serif text-2xl">Leave feedback</CardTitle></CardHeader>
-          <CardContent>
-            <label className="block text-sm text-slate-600 mb-1">Type</label>
-            <select value={kind} onChange={e=>setKind(e.target.value as FeedbackItem["kind"])} className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 mb-3">
-              <option>Applause</option>
-              <option>Appreciation</option>
-              <option>Complaint</option>
-            </select>
-
-            <label className="block text-sm text-slate-600 mb-1">Message</label>
-            <textarea value={message} onChange={e=>setMessage(e.target.value)} rows={5} className="w-full rounded-md border border-slate-200 bg-white p-3 mb-3" placeholder="Type your thoughts..." />
-
-            <label className="block text-sm text-slate-600 mb-1">Your name or email (optional)</label>
-            <input value={who} onChange={e=>setWho(e.target.value)} className="w-full h-10 rounded-md border border-slate-200 bg-white px-3 mb-4" />
-
-            <Button onClick={submit}><Sparkles className="w-4 h-4 mr-2"/>Submit</Button>
-            <p className="text-xs text-slate-500 mt-2">Saved locally on this device.</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="font-serif text-2xl">All reports</CardTitle></CardHeader>
-          <CardContent>
-            {items.length === 0 ? (
-              <p className="text-slate-700/80">No reports yet.</p>
-            ) : (
-              <ul className="space-y-3">
-                {items.map(it=>(
-                  <li key={it.id} className="rounded-lg border border-slate-200 bg-white/70 p-3">
-                    <div className="text-xs text-slate-500">{new Date(it.at).toLocaleString()} • {it.kind}{it.who ? ` • ${it.who}` : ""}</div>
-                    <div className="mt-1 text-slate-800">{it.message}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </Section>
-  );
-}
-
-/* ------------------- TO-DO ------------------- */
-type Todo = { id: string; text: string; done: boolean; at: number };
-function TodoPage() {
-  const [text, setText] = useState("");
-  const [list, setList] = useState<Todo[]>(() => {
-    try { return JSON.parse(localStorage.getItem("proposal_todos")||"[]"); } catch { return []; }
-  });
-  const save = (next: Todo[]) => { setList(next); localStorage.setItem("proposal_todos", JSON.stringify(next)); };
-  const add = () => { const t = text.trim(); if(!t) return; save([{ id: crypto.randomUUID(), text: t, done: false, at: Date.now() }, ...list]); setText(""); };
-  const toggle = (id: string) => save(list.map(i=>i.id===id?{...i,done:!i.done}:i));
-  const remove = (id: string) => save(list.filter(i=>i.id!==id));
-
-  return (
-    <Section>
-      <div className="w-full max-w-xl mx-auto">
-        <Card>
-          <CardHeader><CardTitle className="font-serif text-2xl">Our To-Do</CardTitle></CardHeader>
-          <CardContent>
-            <div className="flex gap-2">
-              <input value={text} onChange={e=>setText(e.target.value)} onKeyDown={e=>e.key==="Enter"&&add()}
-                     className="flex-1 h-10 rounded-md border border-slate-200 bg-white px-3" placeholder="Add something sweet..." />
-              <Button onClick={add}><Plus className="w-4 h-4 mr-1"/>Add</Button>
-            </div>
-            <ul className="mt-4 space-y-2">
-              {list.length===0 && <li className="text-slate-700/80">Nothing yet. Add your first one!</li>}
-              {list.map(item=>(
-                <li key={item.id} className="flex items-center justify-between rounded-md bg-white/70 border border-slate-200 px-3 py-2">
-                  <button onClick={()=>toggle(item.id)} className={`inline-flex items-center gap-2 ${item.done?'text-slate-500 line-through':''}`}>
-                    <span className={`grid place-items-center w-6 h-6 rounded-full border ${item.done?'bg-green-50 border-green-200':'border-slate-300'}`}>
-                      {item.done && <Check className="w-4 h-4 text-green-600" />}
-                    </span>
-                    {item.text}
-                  </button>
-                  <button onClick={()=>remove(item.id)} className="text-slate-500 hover:text-rose-600"><Trash2 className="w-4 h-4"/></button>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
-    </Section>
-  );
-}
-
 /* ------------------- ROOT ------------------- */
 export default function App() {
-  const audioCtl = useAudio(CONFIG.AUDIO_URL);
+  const audioCtl = useAudio(SONG);
   useEffect(()=>{ emailjs.init(CONFIG.EMAILJS.PUBLIC_KEY); },[]);
 
   const onYes = async () => {
@@ -708,7 +462,6 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
       <GradientBG>
         <TopNav/>
         <AnimatePresence mode="wait">
@@ -719,14 +472,11 @@ export default function App() {
             <Route path="/offer" element={<OfferPage />} />
             <Route path="/question" element={<QuestionPage onYes={onYes} />} />
             <Route path="/after" element={<CelebrationPage />} />
-            <Route path="/feedback" element={<FeedbackPage />} />
-            <Route path="/todo" element={<TodoPage />} />
             <Route path="*" element={<HeroPage onBegin={()=>{}} audioCtl={audioCtl} />} />
           </Routes>
         </AnimatePresence>
         <footer className="h-10" />
       </GradientBG>
-    </BrowserRouter>
   );
 }
 

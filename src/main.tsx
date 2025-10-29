@@ -6,7 +6,8 @@ import "./index.css";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    {/* basename must match vite base and GitHub Pages path */}
+    <BrowserRouter basename="/prop">
       <App />
     </BrowserRouter>
   </React.StrictMode>

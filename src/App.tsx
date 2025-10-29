@@ -10,6 +10,7 @@ import { PHOTOS, SONG } from "./lib/path";
 const CONFIG = {
   HER: "Lucynda",
   YOU: "Alfred",
+  VENUE: "Neem Grill",
   THEME: {
     bg: "from-[#fffaf6] via-[#fff4f6] to-[#f7f0ff]",
     ink: "#121826",
@@ -159,17 +160,24 @@ function DatePickerPage() {
     setSending(true);
     try {
       await emailjs.send(CONFIG.EMAILJS.SERVICE_ID, CONFIG.EMAILJS.TEMPLATE_ID, {
+        // target ONLY Alfred for the date selection notification
         to_email: "domegilalfred@gmail.com",
         reply_to: "domegilalfred@gmail.com",
+
         you: CONFIG.HER,
         me: CONFIG.YOU,
-        subject_line: `Date picked by ${CONFIG.HER}: ${fmtDay(d)} at ${fmtTime(d)}`,
+
+        // ⬇️ include venue in subject
+        subject_line: `Date picked by ${CONFIG.HER}: ${fmtDay(d)} at ${fmtTime(d)} • ${CONFIG.VENUE}`,
+
         date: new Date().toLocaleString(),
+
+        // ⬇️ pack details your template already renders
         offer_position: "Date selection",
-        offer_team: `${fmtDay(d)} • ${fmtTime(d)}`,
+        offer_team: `${fmtDay(d)} • ${fmtTime(d)} • ${CONFIG.VENUE}`,
         offer_benefits: "—",
       });
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 } });
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, scalar: 0.9 });
       setDone(true);
     } catch {
       alert("Couldn't send the notification. Check EmailJS keys and template.");
@@ -178,45 +186,78 @@ function DatePickerPage() {
     }
   };
 
+  if (done) {
+    return (
+      <Section>
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-2xl">All set! 💌</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="mb-4">
+              Thanks for picking a date. I’ll confirm details soon.
+            </p>
+            <div className="flex gap-3">
+              <Button onClick={() => navigate("/")}>Go home</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </Section>
+    );
+  }
+
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }}>
-      {!done ? (
-        <Section>
-          <Card>
-            <CardHeader><CardTitle className="font-serif text-2xl">Choose a day & time</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-slate-700/80 mb-4">Pick any day from <b>today</b> up to <b>Saturday</b>, then choose a time.</p>
-              <div className="flex flex-wrap gap-3 items-center">
-                <select className="h-10 rounded-md border border-slate-200 bg-white px-3" value={dayISO} onChange={(e) => setDayISO(e.target.value)}>
-                  {days.map((d, i) => (
-                    <option key={d.toISOString()} value={d.toISOString()}>
-                      {i === 0 ? "Today — " : ""}{fmtDay(d)}
-                    </option>
-                  ))}
-                </select>
-                <select className="h-10 rounded-md border border-slate-200 bg-white px-3" value={String(slotIdx)} onChange={(e) => setSlotIdx(Number(e.target.value))}>
-                  {TIME_SLOTS.map((t, i) => <option key={t.label} value={i}>{t.label}</option>)}
-                </select>
-                <Button onClick={onSubmit} disabled={sending}>
-                  {sending ? "Sending…" : (<><Sparkles className="w-4 h-4 mr-2" /> Confirm</>)}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </Section>
-      ) : (
-        <Section>
-          <Card>
-            <CardHeader><CardTitle className="font-serif text-2xl">All set! 💌</CardTitle></CardHeader>
-            <CardContent>
-              <p className="mb-4">Thanks for picking a date. Details confirmed.</p>
-            </CardContent>
-          </Card>
-        </Section>
-      )}
-    </motion.div>
+    <Section>
+      <Card>
+        <CardHeader>
+          <CardTitle className="font-serif text-2xl">Choose a day & time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {/* New venue & playful nudge */}
+          <div className="rounded-lg border border-amber-200/60 bg-amber-50/70 text-amber-900 px-3 py-2 mb-4 text-sm">
+            <b>Venue:</b> {CONFIG.VENUE}. <i>Swallow the urge to research! Just pick a date 😉</i>
+          </div>
+
+          <p className="text-slate-700/80 mb-4">
+            Pick any day from <b>today</b> up to <b>Saturday</b>, then choose a time.
+          </p>
+
+          <div className="flex flex-wrap gap-3 items-center">
+            <select
+              className="h-10 rounded-md border border-slate-200 bg-white px-3"
+              value={dayISO}
+              onChange={(e) => setDayISO(e.target.value)}
+            >
+              {days.map((d, i) => (
+                <option key={d.toISOString()} value={d.toISOString()}>
+                  {i === 0 ? "Today — " : ""}
+                  {fmtDay(d)}
+                </option>
+              ))}
+            </select>
+
+            <select
+              className="h-10 rounded-md border border-slate-200 bg-white px-3"
+              value={String(slotIdx)}
+              onChange={(e) => setSlotIdx(Number(e.target.value))}
+            >
+              {TIME_SLOTS.map((t, i) => (
+                <option key={t.label} value={i}>
+                  {t.label}
+                </option>
+              ))}
+            </select>
+
+            <Button onClick={onSubmit} disabled={sending}>
+              {sending ? "Sending…" : (<><Sparkles className="w-4 h-4 mr-2" /> Confirm</>)}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </Section>
   );
 }
+
 
 /* ------------------- PAGES (FLOW) ------------------- */
 function HeroPage({ onBegin, audioCtl }: { onBegin: () => void; audioCtl: ReturnType<typeof useAudio> }) {

@@ -64,7 +64,9 @@ function shuffleArray<T>(arr: T[]) {
   return copy;
 }
 
-const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
+const API_BASE = (
+  import.meta.env.VITE_API_BASE || "https://prop-cheer-api.ohemaa-prop.workers.dev"
+).replace(/\/$/, "");
 
 async function apiFetch(path: string, timeoutMs = 1200) {
   if (!API_BASE) throw new Error("missing api base");

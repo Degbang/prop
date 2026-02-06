@@ -55,6 +55,22 @@ function CardContent(props: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={`px-6 pb-6 pt-2 ${className}`} {...rest} />;
 }
 
+function shuffleArray<T>(arr: T[]) {
+  const copy = [...arr];
+  for (let i = copy.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
+
+async function apiFetch(path: string, timeoutMs = 1200) {
+  if (!API_BASE) throw new Error("missing api base");
+  return await fetchJsonWithTimeout(`${API_BASE}${path}`, {}, timeoutMs);
+}
+
 /* ------------------- AUDIO ------------------- */
 function useAudio(src: string) {
   const [playing, setPlaying] = useState(false);
@@ -115,145 +131,691 @@ function TopNav() {
           </span>
         </Link>
         <div className="flex items-center gap-5 text-sm text-slate-700/80">
-          {/* keep links for manual testing; hidden on /date via App */}
           <Link to="memories" className="hover:underline">Memories</Link>
           <Link to="offer" className="hover:underline">Offer</Link>
-          <Link to="date" className="hover:underline">Pick a date</Link>
+          <Link to="valentine" className="hover:underline">Valentine</Link>
+          <Link to="cheer" className="hover:underline"> Cheer up Corner</Link>
         </div>
       </div>
     </nav>
   );
 }
 
-/* ------------------- DATE PICKER ------------------- */
-const TIME_SLOTS = [
-  { label: "07:00 PM", h: 19, m: 0 },
-  { label: "08:00 PM", h: 20, m: 0 },
-  { label: "09:00 PM", h: 21, m: 0 },
+/* ------------------- VALENTINE ------------------- */
+const LOVE_NOTES_BODY = [
+  "I love your boobs — they’re beautiful and perfectly you.",
+  "I love your breasts; soft, warm, and comforting.",
+  "I love your chest; it feels like home.",
+  "I love your bosom; it’s the sweetest place to rest.",
+  "I love your curves; every inch is lovely.",
+  "I love your milkers; they make me blush.",
+  "I love your twins; I smile every time.",
+  "I love your tatas; they’re adorable.",
+  "I love your knockers; they’re irresistible.",
+  "I love your tits; they’re gorgeous.",
 ];
 
-function startOfDay(d: Date) { const x = new Date(d); x.setHours(0,0,0,0); return x; }
-function fmtDay(d: Date) { return d.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }); }
-function fmtTime(d: Date) { return d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" }); }
-function getDatesToSaturday(): Date[] {
-  const start = startOfDay(new Date());
-  const toSat = (6 - start.getDay() + 7) % 7;
-  const end = new Date(start); end.setDate(start.getDate() + toSat);
-  const out: Date[] = [];
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) out.push(new Date(d));
-  return out;
-}
+const LOVE_NOTES_EXTRA = [
+  "I love your smile; it makes everything softer.",
+  "I love your dimple; it’s my favorite little detail.",
+  "I love your thunderbolt energy; it sparks me alive.",
+  "I love your throat and neck; so delicate and beautiful.",
+  "I love your soft belly; it feels like home.",
+  "I love your kind self; you’re gentle with people.",
+  "I love your motherly nature; it’s warm and steady.",
+  "YOU ARE SO FUNNY.",
+  "I love your eyes; they calm me.",
+  "I love your laugh; it turns my day around.",
+];
 
-function DatePickerPage() {
-  const navigate = useNavigate();
-  const days = useMemo(() => getDatesToSaturday(), []);
-  const [dayISO, setDayISO] = useState<string>(() => days[0].toISOString());
-  const [slotIdx, setSlotIdx] = useState(0);
-  const [sending, setSending] = useState(false);
-  const [done, setDone] = useState(false);
+function ValentinePage() {
+  const [accepted, setAccepted] = useState(false);
 
-  const onSubmit = async () => {
-    const d = new Date(dayISO);
-    const slot = TIME_SLOTS[slotIdx];
-    d.setHours(slot.h, slot.m, 0, 0);
+  useEffect(() => {
+    if (!accepted) return;
+    confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 }, scalar: 0.9 });
+  }, [accepted]);
 
-    setSending(true);
-    try {
-      await emailjs.send(CONFIG.EMAILJS.SERVICE_ID, CONFIG.EMAILJS.TEMPLATE_ID, {
-        // target ONLY Alfred for the date selection notification
-        to_email: "domegilalfred@gmail.com",
-        reply_to: "domegilalfred@gmail.com",
-
-        you: CONFIG.HER,
-        me: CONFIG.YOU,
-
-        // ⬇️ include venue in subject
-        subject_line: `Date picked by ${CONFIG.HER}: ${fmtDay(d)} at ${fmtTime(d)} • ${CONFIG.VENUE}`,
-
-        date: new Date().toLocaleString(),
-
-        // ⬇️ pack details your template already renders
-        offer_position: "Date selection",
-        offer_team: `${fmtDay(d)} • ${fmtTime(d)} • ${CONFIG.VENUE}`,
-        offer_benefits: "—",
-      });
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.7 }, scalar: 0.9 });
-      setDone(true);
-    } catch {
-      alert("Couldn't send the notification. Check EmailJS keys and template.");
-    } finally {
-      setSending(false);
-    }
-  };
-
-  if (done) {
+  if (accepted) {
     return (
       <Section>
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-serif text-2xl">All set! 💌</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="mb-4">
-              Thanks for picking a date. I’ll confirm details soon.
-            </p>
-            <div className="flex gap-3">
-              <Button onClick={() => navigate("/")}>Go home</Button>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="grid gap-6 w-full max-w-3xl mx-auto">
+          <Card className="bg-rose-50/70 border-rose-200/70 shadow-xl">
+            <CardHeader>
+              <CardTitle className="font-serif text-2xl">Yay. She said yes. 💙</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-700/90">
+                Thank you, love. I’ll make it soft, sweet, and a little bit magical. There there. I’ve got you.
+                Please bear with me and be patient with me as I learn to love you even better.
+              </p>
+              <div className="mt-4 flex gap-3">
+                <Button onClick={() => setAccepted(false)} variant="secondary">Read it again</Button>
+              </div>
+            </CardContent>
+          </Card>
+          <PrayerBlock />
+        </div>
       </Section>
     );
   }
 
   return (
     <Section>
-      <Card>
+      <Card className="bg-rose-50/70 border-rose-200/70 shadow-xl">
         <CardHeader>
-          <CardTitle className="font-serif text-2xl">Choose a day & time</CardTitle>
+          <CardTitle className="font-serif text-2xl">Will you be my Valentine?</CardTitle>
         </CardHeader>
         <CardContent>
-          {/* New venue & playful nudge */}
-          <div className="rounded-lg border border-amber-200/60 bg-amber-50/70 text-amber-900 px-3 py-2 mb-4 text-sm">
-            <b>Venue:</b> {CONFIG.VENUE}. <i>Swallow the urge to research! Just pick a date 😉</i>
-          </div>
-
-          <p className="text-slate-700/80 mb-4">
-            Pick any day from <b>today</b> up to <b>Saturday</b>, then choose a time.
+          <p className="text-slate-700/90 leading-relaxed">
+            Hey Lucynda, I know I can be annoying, but I’m trying and God knows my heart. I am trying to love you
+            more each day. I really don’t mean to upset you or make you mad. It’s the devil’s fault, I promise. 😉
+            I love you, and I want to ask you to be my Valentine.
           </p>
-
-          <div className="flex flex-wrap gap-3 items-center">
-            <select
-              className="h-10 rounded-md border border-slate-200 bg-white px-3"
-              value={dayISO}
-              onChange={(e) => setDayISO(e.target.value)}
-            >
-              {days.map((d, i) => (
-                <option key={d.toISOString()} value={d.toISOString()}>
-                  {i === 0 ? "Today — " : ""}
-                  {fmtDay(d)}
-                </option>
-              ))}
-            </select>
-
-            <select
-              className="h-10 rounded-md border border-slate-200 bg-white px-3"
-              value={String(slotIdx)}
-              onChange={(e) => setSlotIdx(Number(e.target.value))}
-            >
-              {TIME_SLOTS.map((t, i) => (
-                <option key={t.label} value={i}>
-                  {t.label}
-                </option>
-              ))}
-            </select>
-
-            <Button onClick={onSubmit} disabled={sending}>
-              {sending ? "Sending…" : (<><Sparkles className="w-4 h-4 mr-2" /> Confirm</>)}
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button size="lg" onClick={() => setAccepted(true)}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Yes, I’ll be your Valentine
             </Button>
           </div>
         </CardContent>
       </Card>
+    </Section>
+  );
+}
+
+/* ------------------- CHEER UP CORNER ------------------- */
+const ytSearch = (q: string) => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+
+const MOODS = [
+  {
+    id: "sad",
+    label: "Sad",
+    quote: "You are allowed to be soft today.",
+    msg: "Hey love, I’m here. You don’t have to carry it alone. Let me sit with you and make the world quiet for a while.",
+    action: "Take 3 slow breaths. I’ll wait right here.",
+    verseRef: "Psalm 34:18",
+    verseFallback: "The Lord is near to the brokenhearted and saves the crushed in spirit.",
+    songQueries: [
+      "Adele Easy On Me",
+      "Stormzy Blinded By Your Grace Pt. 2",
+      "gospel worship comfort",
+      "RAYE Escapism",
+    ],
+    songs: [
+      { title: "Easy On Me", artist: "Adele", url: ytSearch("Adele Easy On Me") },
+      { title: "Blinded By Your Grace, Pt. 2", artist: "Stormzy", url: ytSearch("Stormzy Blinded By Your Grace Pt. 2") },
+    ],
+  },
+  {
+    id: "tired",
+    label: "Tired",
+    quote: "Rest is holy. You are not falling behind.",
+    msg: "Your body is wise, and it’s asking for gentleness. I’ll bring you water, snacks, and peace.",
+    action: "Close your eyes for 10 seconds and unclench your jaw.",
+    verseRef: "Matthew 11:28",
+    verseFallback: "Come to me, all who labor and are heavy laden, and I will give you rest.",
+    songQueries: [
+      "Kirk Franklin I Smile",
+      "Maverick City Music Jireh",
+      "gospel chill worship",
+      "Adele Someone Like You",
+    ],
+    songs: [
+      { title: "I Smile", artist: "Kirk Franklin", url: ytSearch("Kirk Franklin I Smile") },
+      { title: "Jireh", artist: "Maverick City Music", url: ytSearch("Maverick City Music Jireh") },
+    ],
+  },
+  {
+    id: "anxious",
+    label: "Anxious",
+    quote: "Your heart is safe with me.",
+    msg: "There there. Let’s name what’s heavy and leave the rest for later. I’m still right here, still yours.",
+    action: "Inhale for 4, hold for 4, exhale for 6. Repeat 3 times.",
+    verseRef: "Philippians 4:6-7",
+    verseFallback: "Do not be anxious about anything, but in everything by prayer and supplication with thanksgiving let your requests be made known to God.",
+    songQueries: [
+      "Hillsong United Oceans",
+      "RAYE Escapism",
+      "gospel peace worship",
+      "Adele Hold On",
+    ],
+    songs: [
+      { title: "Oceans (Where Feet May Fail)", artist: "Hillsong United", url: ytSearch("Hillsong United Oceans") },
+      { title: "Escapism.", artist: "RAYE", url: ytSearch("RAYE Escapism") },
+    ],
+  },
+  {
+    id: "overwhelmed",
+    label: "Overwhelmed",
+    quote: "One thing at a time. I’ll carry the next one.",
+    msg: "We can shrink the day together. Give me one tiny task and I’ll do it with you.",
+    action: "Pick just one small thing. That is enough.",
+    verseRef: "Isaiah 41:10",
+    verseFallback: "Fear not, for I am with you; be not dismayed, for I am your God; I will strengthen you, I will help you.",
+    songQueries: [
+      "Elevation Worship Do It Again",
+      "Lucas Graham Love Someone",
+      "gospel encouragement",
+      "Adele Skyfall",
+    ],
+    songs: [
+      { title: "Do It Again", artist: "Elevation Worship", url: ytSearch("Elevation Worship Do It Again") },
+      { title: "Love Someone", artist: "Lucas Graham", url: ytSearch("Lucas Graham Love Someone") },
+    ],
+  },
+  {
+    id: "lonely",
+    label: "Lonely",
+    quote: "I’m never far, even when I’m not there.",
+    msg: "Text me. Call me. I want to hear your voice. You are loved, loudly and daily.",
+    action: "Send me one word. I’ll reply with five.",
+    verseRef: "Deuteronomy 31:8",
+    verseFallback: "It is the Lord who goes before you. He will be with you; he will not leave you or forsake you.",
+    songQueries: [
+      "Adele Hello",
+      "Lucas Graham 7 Years",
+      "gospel hope worship",
+      "Stormzy Hide & Seek",
+    ],
+    songs: [
+      { title: "Hello", artist: "Adele", url: ytSearch("Adele Hello") },
+      { title: "7 Years", artist: "Lucas Graham", url: ytSearch("Lucas Graham 7 Years") },
+    ],
+  },
+  {
+    id: "mad",
+    label: "Mad",
+    quote: "Your feelings are valid, even when they’re loud.",
+    msg: "If I’m the reason, I’m sorry. I’ll do better. If not, I’m here to listen and hold you.",
+    action: "Clench your fists for 5 seconds, then let go. Again, twice.",
+    verseRef: "James 1:19",
+    verseFallback: "Let every person be quick to hear, slow to speak, slow to anger.",
+    songQueries: [
+      "Stormzy Big For Your Boots",
+      "Tasha Cobbs Leonard Break Every Chain",
+      "gospel power praise",
+      "Adele Rolling in the Deep",
+    ],
+    songs: [
+      { title: "Big For Your Boots", artist: "Stormzy", url: ytSearch("Stormzy Big For Your Boots") },
+      { title: "Break Every Chain", artist: "Tasha Cobbs Leonard", url: ytSearch("Tasha Cobbs Leonard Break Every Chain") },
+    ],
+  },
+];
+
+const MOOD_VARIANTS: Record<string, { msgs: string[]; actions: string[]; quotes: string[] }> = {
+  sad: {
+    quotes: [
+      "Your softness is not weakness.",
+      "It’s okay to feel everything.",
+    ],
+    msgs: [
+      "Hey love, I’m here. You don’t have to carry it alone. Let me sit with you and make the world quiet for a while.",
+      "If today is heavy, let me carry a little of it. We can just breathe and be still.",
+    ],
+    actions: [
+      "Take 3 slow breaths. I’ll wait right here.",
+      "Put on a soft song and sip some water.",
+    ],
+  },
+  tired: {
+    quotes: [
+      "Rest is still love.",
+      "You’re not behind. You’re human.",
+    ],
+    msgs: [
+      "Your body is wise, and it’s asking for gentleness. I’ll bring you water, snacks, and peace.",
+      "No pressure today. Rest is still love, and you’re not falling behind.",
+    ],
+    actions: [
+      "Close your eyes for 10 seconds and unclench your jaw.",
+      "Stretch your shoulders and roll your neck slowly.",
+    ],
+  },
+  anxious: {
+    quotes: [
+      "Breathe. You are safe with me.",
+      "We can take this one breath at a time.",
+    ],
+    msgs: [
+      "There there. Let’s name what’s heavy and leave the rest for later. I’m still right here, still yours.",
+      "Let’s shrink the worry to one sentence, then breathe together.",
+    ],
+    actions: [
+      "Inhale for 4, hold for 4, exhale for 6. Repeat 3 times.",
+      "Name 5 things you can see, 4 you can touch, 3 you can hear.",
+    ],
+  },
+  overwhelmed: {
+    quotes: [
+      "One small win is still a win.",
+      "We can do the next tiny thing together.",
+    ],
+    msgs: [
+      "We can shrink the day together. Give me one tiny task and I’ll do it with you.",
+      "We only need one small win right now. Just one.",
+    ],
+    actions: [
+      "Pick just one small thing. That is enough.",
+      "Write 3 tiny bullet points, then pause.",
+    ],
+  },
+  lonely: {
+    quotes: [
+      "You are loved, loudly and daily.",
+      "I’m with you even when I’m not there.",
+    ],
+    msgs: [
+      "Text me. Call me. I want to hear your voice. You are loved, loudly and daily.",
+      "I’m with you in spirit. I want to be the first person you hear from.",
+    ],
+    actions: [
+      "Send me one word. I’ll reply with five.",
+      "Step outside for 2 minutes and breathe.",
+    ],
+  },
+  mad: {
+    quotes: [
+      "Your feelings are valid.",
+      "Let’s breathe, then talk.",
+    ],
+    msgs: [
+      "If I’m the reason, I’m sorry. I’ll do better. If not, I’m here to listen and hold you.",
+      "Tell me what hurt. I want to understand, not argue.",
+    ],
+    actions: [
+      "Clench your fists for 5 seconds, then let go. Again, twice.",
+      "Slow exhale, drop your shoulders, and unclench your jaw.",
+    ],
+  },
+};
+
+type JokeKind = "dad" | "funny" | "riddle" | "nerdy";
+
+const FALLBACK_JOKES: Record<Exclude<JokeKind, "riddle">, string[]> = {
+  dad: [
+    "I’m reading a book about anti‑gravity. It’s impossible to put down.",
+    "I used to play piano by ear, but now I use my hands.",
+    "Why don’t eggs tell jokes? They’d crack each other up.",
+  ],
+  funny: [
+    "I told my computer I needed a break. It said, “No problem, I’ll go to sleep.”",
+    "Why did the scarecrow win an award? Because he was outstanding in his field.",
+    "I tried to catch fog yesterday. Mist.",
+  ],
+  nerdy: [
+    "A SQL query walks into a bar, walks up to two tables and asks: “Can I join you?”",
+    "There are 10 kinds of people: those who understand binary and those who don’t.",
+    "I would tell you a UDP joke, but you might not get it.",
+  ],
+};
+
+const FALLBACK_RIDDLES = [
+  { q: "What has a heart that doesn’t beat?", a: "An artichoke." },
+  { q: "What gets wetter the more it dries?", a: "A towel." },
+  { q: "What has keys but can’t open locks?", a: "A piano." },
+];
+
+async function fetchJsonWithTimeout(url: string, options: RequestInit = {}, timeoutMs = 900) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    if (!res.ok) throw new Error("bad response");
+    return await res.json();
+  } finally {
+    clearTimeout(id);
+  }
+}
+
+function CheerUpPage() {
+  const [moodId, setMoodId] = useState<string | null>(null);
+  const [moodNonce, setMoodNonce] = useState(0);
+  const [verse, setVerse] = useState<{ reference: string; text: string } | null>(null);
+  const [verseLoading, setVerseLoading] = useState(false);
+  const [verseNote, setVerseNote] = useState("");
+  const [songPick, setSongPick] = useState<{ title: string; artist: string; url: string } | null>(null);
+  const [moodCopy, setMoodCopy] = useState<{ msg: string; action: string } | null>(null);
+  const [encouragement, setEncouragement] = useState<{ text: string; author?: string } | null>(null);
+  const [encourageLoading, setEncourageLoading] = useState(false);
+  const [quotePick, setQuotePick] = useState<string | null>(null);
+
+  const [jokeKind, setJokeKind] = useState<JokeKind>("dad");
+  const [joke, setJoke] = useState<{ kind: JokeKind; text: string; answer?: string } | null>(null);
+  const [jokeLoading, setJokeLoading] = useState(false);
+  const [jokeError, setJokeError] = useState("");
+  const [showAnswer, setShowAnswer] = useState(false);
+
+  const [loveNoteIdx, setLoveNoteIdx] = useState<number | null>(null);
+  const loveNotesBody = useMemo(() => shuffleArray(LOVE_NOTES_BODY), []);
+  const loveNotesExtra = useMemo(() => shuffleArray(LOVE_NOTES_EXTRA), []);
+  const loveNote =
+    loveNoteIdx === null
+      ? null
+      : loveNoteIdx < loveNotesBody.length
+        ? loveNotesBody[loveNoteIdx]
+        : loveNotesExtra[(loveNoteIdx - loveNotesBody.length) % loveNotesExtra.length];
+
+  const mood = MOODS.find((m) => m.id === moodId);
+  const jokeHistoryRef = useRef<string[]>([]);
+  const lastQuoteRef = useRef<Record<string, string>>({});
+  const lastMsgRef = useRef<Record<string, string>>({});
+  const lastActionRef = useRef<Record<string, string>>({});
+  const lastSongRef = useRef<Record<string, string>>({});
+  const lastAdviceRef = useRef<string | null>(null);
+  const quotePoolRef = useRef<Array<{ text?: string; author?: string }> | null>(null);
+
+  const pickRandom = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+  const pickDifferent = (arr: string[], last?: string) => {
+    if (!arr.length) return "";
+    if (arr.length === 1) return arr[0];
+    let next = pickRandom(arr);
+    if (last && next === last) {
+      const idx = arr.indexOf(next);
+      next = arr[(idx + 1) % arr.length];
+    }
+    return next;
+  };
+
+  useEffect(() => {
+    if (!mood) {
+      setVerse(null);
+      setVerseNote("");
+      setSongPick(null);
+      setMoodCopy(null);
+      setEncouragement(null);
+      setQuotePick(null);
+      return;
+    }
+
+    const variants = MOOD_VARIANTS[mood.id];
+    setSongPick(null);
+    const msg = pickDifferent(variants?.msgs?.length ? variants.msgs : [mood.msg], lastMsgRef.current[mood.id]);
+    const action = pickDifferent(variants?.actions?.length ? variants.actions : [mood.action], lastActionRef.current[mood.id]);
+    const quote = pickDifferent(variants?.quotes?.length ? variants.quotes : [mood.quote], lastQuoteRef.current[mood.id]);
+    lastMsgRef.current[mood.id] = msg;
+    lastActionRef.current[mood.id] = action;
+    lastQuoteRef.current[mood.id] = quote;
+    setMoodCopy({ msg, action });
+    setQuotePick(quote);
+
+    let active = true;
+    const loadVerse = async () => {
+      setVerseLoading(true);
+      setVerseNote("");
+      try {
+        const data = await apiFetch(`/verse?ref=${encodeURIComponent(mood.verseRef)}`, 1600);
+        const text = String(data?.text || "").replace(/\s+/g, " ").trim();
+        const reference = String(data?.reference || mood.verseRef).trim();
+        if (active) setVerse({ reference, text: text || mood.verseFallback });
+      } catch {
+        if (!active) return;
+        setVerse({ reference: mood.verseRef, text: mood.verseFallback });
+        setVerseNote("Verse endpoint unavailable. Showing a local verse.");
+      } finally {
+        if (active) setVerseLoading(false);
+      }
+    };
+
+    const loadEncouragement = async () => {
+      setEncourageLoading(true);
+      try {
+        const data = await apiFetch("/quote", 1200);
+        const text = String(data?.text || "").trim();
+        const author = String(data?.author || "").trim();
+        if (active && text && text !== lastAdviceRef.current) {
+          lastAdviceRef.current = text;
+          setEncouragement({ text, author: author || undefined });
+          return;
+        }
+      } catch {
+        // ignore, try next source
+      }
+
+      try {
+        if (!quotePoolRef.current) {
+          const data = await apiFetch("/quote/list", 1600);
+          quotePoolRef.current = Array.isArray(data) ? data : [];
+        }
+        const pool = quotePoolRef.current || [];
+        const pick = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+        const text = String(pick?.text || "").trim();
+        const author = String(pick?.author || "").trim();
+        if (active && text) {
+          setEncouragement({ text, author: author || undefined });
+          return;
+        }
+      } catch {
+        // fall through to local line
+      } finally {
+        if (active) setEncourageLoading(false);
+      }
+    };
+
+    const loadSong = async () => {
+      try {
+        const query = pickRandom(mood.songQueries);
+        const data = await apiFetch(`/song?q=${encodeURIComponent(query)}`, 1200);
+        const artist = String(data?.artist || "").trim();
+        const title = String(data?.title || "").trim();
+        const key = `${artist} - ${title}`;
+        if (artist && title) {
+          if (lastSongRef.current[mood.id] === key && mood.songs.length) {
+            setSongPick(pickRandom(mood.songs));
+            return;
+          }
+          lastSongRef.current[mood.id] = key;
+          setSongPick({
+            artist,
+            title,
+            url: ytSearch(`${artist} ${title}`),
+          });
+          return;
+        }
+        setSongPick(pickRandom(mood.songs));
+      } catch {
+        setSongPick(pickRandom(mood.songs));
+      }
+    };
+
+    loadVerse();
+    loadEncouragement();
+    loadSong();
+    return () => {
+      active = false;
+    };
+  }, [moodId, moodNonce]);
+
+  useEffect(() => {
+    setShowAnswer(false);
+  }, [jokeKind]);
+
+  const rememberJoke = (key: string) => {
+    jokeHistoryRef.current = [key, ...jokeHistoryRef.current].slice(0, 50);
+  };
+
+  const fetchJoke = async (kind: JokeKind) => {
+    setJokeLoading(true);
+    setJokeError("");
+    const attempts = 3;
+    const normalize = (t: string) => t.replace(/\s+/g, " ").trim();
+
+    try {
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        let text = "";
+        let answer: string | undefined;
+
+        if (kind === "riddle") {
+          const data = await apiFetch(`/joke?type=riddle`, 1200);
+          text = normalize(String(data?.question || data?.text || "Riddle time!"));
+          answer = normalize(String(data?.answer || data?.solution || "")) || undefined;
+        } else {
+          const data = await apiFetch(`/joke?type=${encodeURIComponent(kind)}`, 1200);
+          text = normalize(String(data?.text || ""));
+        }
+
+        if (!text && !answer) throw new Error("empty");
+        const key = `${text}||${answer || ""}`;
+        if (!jokeHistoryRef.current.includes(key) || attempt === attempts - 1) {
+          setJoke({ kind, text, answer });
+          rememberJoke(key);
+          break;
+        }
+      }
+    } catch {
+      if (kind === "riddle") {
+        const r = pickRandom(FALLBACK_RIDDLES);
+        setJoke({ kind, text: r.q, answer: r.a });
+      } else {
+        const list = FALLBACK_JOKES[kind];
+        const text = pickRandom(list);
+        setJoke({ kind, text });
+      }
+      setJokeError("Couldn’t reach the jokes endpoint. Here’s a local one.");
+    } finally {
+      setJokeLoading(false);
+    }
+  };
+
+  const getJoke = () => {
+    setShowAnswer(false);
+    fetchJoke(jokeKind);
+  };
+
+  return (
+    <Section>
+      <div className="grid gap-6 w-full max-w-6xl mx-auto md:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-2xl">Cheer‑up corner</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-slate-700/90">
+              If you’re sad or heavy, tell me the mood and I’ll hold your heart for a minute.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {MOODS.map((m) => (
+                <Button
+                  key={m.id}
+                  variant={m.id === moodId ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => {
+                    setMoodId(m.id);
+                    setMoodNonce((n) => n + 1);
+                  }}
+                >
+                  {m.label}
+                </Button>
+              ))}
+            </div>
+
+            {mood && (
+              <div className="mt-5 rounded-xl border border-slate-200/70 bg-white/70 p-4">
+                <p className="text-sm text-slate-500">“{encouragement?.text || quotePick || mood.quote}”</p>
+                {encouragement?.author && (
+                  <p className="text-xs text-slate-400 mt-1">— {encouragement.author}</p>
+                )}
+                {encourageLoading && <p className="text-xs text-slate-400 mt-1">Fetching a fresh encouragement…</p>}
+
+                <p className="mt-2 text-slate-800">{moodCopy?.msg || mood.msg}</p>
+                <p className="mt-3 text-sm text-slate-600"><b>Try this:</b> {moodCopy?.action || mood.action}</p>
+
+                {songPick && (
+                  <div className="mt-4 rounded-lg border border-slate-200/60 bg-slate-50/70 p-3">
+                    <p className="text-xs text-slate-500">Song for this mood</p>
+                    <a className="text-sm text-blue-600 hover:underline" href={songPick.url} target="_blank" rel="noreferrer">
+                      {songPick.artist} — {songPick.title}
+                    </a>
+                  </div>
+                )}
+                {!songPick && (
+                  <div className="mt-4 rounded-lg border border-slate-200/60 bg-slate-50/70 p-3">
+                    <p className="text-xs text-slate-500">Song for this mood</p>
+                    <p className="text-sm text-slate-600">Picking a song…</p>
+                  </div>
+                )}
+
+                <div className="mt-4 rounded-lg border border-slate-200/60 bg-slate-50/70 p-3">
+                  <p className="text-xs text-slate-500">Verse for you</p>
+                  {verseLoading && <p className="text-sm text-slate-600">Fetching a verse…</p>}
+                  {!verseLoading && verse && (
+                    <p className="text-sm text-slate-800">
+                      <b>{verse.reference}</b> — {verse.text}
+                    </p>
+                  )}
+                  {verseNote && <p className="mt-1 text-xs text-amber-700">{verseNote}</p>}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-2xl">Make me laugh</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-slate-700/90">Pick a style, then tap to fetch a joke or a riddle. It’s about to get nerdy.</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+                {[
+                  { id: "dad", label: "Dad joke" },
+                  { id: "funny", label: "Funny joke" },
+                  { id: "riddle", label: "Riddle" },
+                  { id: "nerdy", label: "Nerdy" },
+                ].map((opt) => (
+                <Button
+                  key={opt.id}
+                  variant={opt.id === jokeKind ? "primary" : "secondary"}
+                  size="sm"
+                  onClick={() => setJokeKind(opt.id as JokeKind)}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-3 items-center">
+              <Button onClick={getJoke} disabled={jokeLoading}>
+                <Sparkles className="w-4 h-4 mr-2" /> {jokeLoading ? "Fetching…" : (jokeKind === "riddle" ? "Give me a riddle" : "Make me laugh")}
+              </Button>
+              {jokeError && <span className="text-xs text-amber-700">{jokeError}</span>}
+            </div>
+            {joke && (
+              <div className="mt-4 rounded-xl border border-slate-200/70 bg-white/70 p-4">
+                <p className="text-slate-800">{joke.text}</p>
+                {joke.kind === "riddle" && joke.answer && !showAnswer && (
+                  <div className="mt-3">
+                    <Button variant="secondary" size="sm" onClick={() => setShowAnswer(true)}>
+                      Reveal answer
+                    </Button>
+                  </div>
+                )}
+                {joke.kind === "riddle" && joke.answer && showAnswer && (
+                  <p className="mt-2 text-slate-700"><b>Answer:</b> {joke.answer}</p>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-serif text-2xl">A little love note</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-slate-700/90">Click me and I’ll tell you what I love about you.</p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => setLoveNoteIdx((i) => (i === null ? 0 : i + 1))}
+              >
+                Click me
+              </Button>
+              {loveNote && <p className="text-slate-800">{loveNote}</p>}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </Section>
   );
 }
@@ -587,19 +1149,8 @@ function ScrollToTop() {
 
 export default function App() {
   const audioCtl = useAudio(SONG);
-  const location = useLocation();
-  const hideNav = location.pathname.includes("/date");
 
   useEffect(() => { emailjs.init(CONFIG.EMAILJS.PUBLIC_KEY); }, []);
-
-  // prevent back nav on /date
-  useEffect(() => {
-    if (!hideNav) return;
-    const blockBack = () => window.history.pushState(null, "", window.location.href);
-    window.history.pushState(null, "", window.location.href);
-    window.addEventListener("popstate", blockBack);
-    return () => window.removeEventListener("popstate", blockBack);
-  }, [hideNav]);
 
   const navigate = useNavigate();
   const onYes = async () => {
@@ -623,23 +1174,22 @@ export default function App() {
   return (
     <GradientBG>
       <ScrollToTop />
-      {!hideNav && <TopNav />}
+      <TopNav />
       <AnimatePresence mode="wait">
         <Routes>
-          {/* DATE (nav hidden) */}
-          <Route path="date" element={<DatePickerPage />} />
-
           {/* PROPOSAL FLOW */}
           <Route index element={<HeroPage onBegin={() => {}} audioCtl={audioCtl} />} />
           <Route path="memories" element={<GalleryPage />} />
           <Route path="letter" element={<LoveLetterPage />} />
           <Route path="offer" element={<OfferPage />} />
+          <Route path="valentine" element={<ValentinePage />} />
+          <Route path="cheer" element={<CheerUpPage />} />
           <Route path="question" element={<QuestionPage onYes={onYes} />} />
           <Route path="after" element={<CelebrationPage />} />
           <Route path="*" element={<HeroPage onBegin={() => {}} audioCtl={audioCtl} />} />
         </Routes>
       </AnimatePresence>
-      {!hideNav && <footer className="h-10" />}
+      <footer className="h-10" />
     </GradientBG>
   );
 }

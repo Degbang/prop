@@ -5,6 +5,7 @@ import confetti from "canvas-confetti";
 import emailjs from "@emailjs/browser";
 import { Heart, Sparkles, Mail, CheckCircle2, ChevronRight, HandHeart } from "lucide-react";
 import { PHOTOS, SONG } from "./lib/path";
+import YearOnePage from "./YearOne";
 
 /* ------------------- CONFIG ------------------- */
 const CONFIG = {
@@ -94,7 +95,11 @@ function useAudio(src: string) {
       setPlaying(true);
     } catch {}
   };
-  return { play, playing };
+  const pause = () => {
+    audio.current?.pause();
+    setPlaying(false);
+  };
+  return { play, pause, playing };
 }
 
 /* ------------------- LAYOUT ------------------- */
@@ -1172,6 +1177,33 @@ export default function App() {
     } catch {}
     navigate("/after", { replace: true }); // SPA-safe with basename
   };
+
+  const onRenew = async () => {
+    try {
+      await emailjs.send(CONFIG.EMAILJS.SERVICE_ID, CONFIG.EMAILJS.TEMPLATE_ID, {
+        to_email: CONFIG.EMAILS.join(", "),
+        you: CONFIG.HER,
+        me: CONFIG.YOU,
+        subject_line: `${CONFIG.HER} renewed for year two 💙`,
+        date: new Date().toLocaleString(),
+        reply_to: CONFIG.EMAILS[0] || "",
+        offer_position: "My person (Year Two)",
+        offer_team: "Food • Music • God • Laughter",
+        offer_benefits: "One shoulder rub, a movie night with popcorn or pizza, dinner from next payday",
+      });
+    } catch {}
+  };
+
+  // Year One gets its own full-bleed layout, outside the pastel shell and top nav.
+  const { pathname } = useLocation();
+  if (pathname.replace(/\/$/, "") === "/one-year") {
+    return (
+      <>
+        <ScrollToTop />
+        <YearOnePage audioCtl={audioCtl} onRenew={onRenew} />
+      </>
+    );
+  }
 
   return (
     <GradientBG>
